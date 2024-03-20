@@ -18,24 +18,37 @@
 import streamlit as st
 import pandas as pd
 
-# Función para cargar los datos desde el archivo Excel
-def load_data():
-    df = pd.read_excel('PUB_EMPRESAS_DATA_1.xlsx', dtype={'column_name': str}) #nrows=60000
+def load_rut_column():
+    # Cargar solo la columna RUT
+    rut_column = pd.read_excel('PUB_EMPRESAS_DATA_1.xlsx', usecols=['RUT'])
+    return rut_column
+
+def find_row_by_rut(rut_column, target_rut):
+    # Iterar sobre las filas y encontrar la coincidencia
+    for index, row in rut_column.iterrows():
+        if row['RUT'] == target_rut:
+            return index
+
+def load_data(row_index):
+    # Cargar solo la fila que coincide con el índice
+    df = pd.read_excel('PUB_EMPRESAS_DATA_1.xlsx', skiprows=row_index, nrows=1)
     return df
 
-# Cargar los datos
 data_load_state = st.text('Cargando data...')
-df = load_data()
-data_load_state.text('Cargando data... Hecho!')
+rut_column = load_rut_column()
+data_load_state.text('Cargando columna RUT... Hecho!')
 
-# Agregar un buscador
-search_query = st.text_input("Buscar por RUT", "")
-if search_query:
-    # Filtrar el DataFrame según el texto ingresado por el usuario en la columna RUT
-    filtered_df = df[df['RUT'].str.contains(search_query, case=False)]
-    # Mostrar solo la primera fila que coincide con la búsqueda
-    if not filtered_df.empty:
-        st.subheader('Resultado de la búsqueda')
-        st.write(filtered_df.iloc[0])
+# Buscar el RUT deseado
+target_rut = st.text_input("Ingrese el RUT que desea buscar:")
+
+if st.button("Buscar"):
+    # Buscar el índice de la fila que coincide con el RUT
+    row_index = find_row_by_rut(rut_column, target_rut)
+    if row_index is not None:
+        data_load_state.text('Cargando fila... Hecho!')
+        # Cargar y mostrar la fila completa
+        df = load_data(row_index)
+        st.subheader('Fila encontrada:')
+        st.write(df)
     else:
-        st.write("No se encontraron resultados")
+        st.write("RUT no encontrado.")
